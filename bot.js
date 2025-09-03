@@ -234,12 +234,6 @@ async function handleSetupWritingRules(msg) {
 
 These rules will be sent to the AI with EVERY chapter request across ALL stories.
 
-**Option 1: Upload Document (Recommended)**
-Upload a .txt file (up to 10MB) with your writing rules.
-
-**Option 2: Paste Text**
-Paste your rules directly.
-
 Include things like:
 • Your preferred writing style
 • Dialogue preferences  
@@ -249,7 +243,7 @@ Include things like:
 • Word count preferences
 • Tone and mood guidelines
 
-**Send either a .txt file OR paste your text now.**`);
+**Just paste your complete writing rules in your next message.** Don't worry about length - I'll handle long messages automatically.`);
   
   botMemory.setupState = 'expecting_writing_rules';
 }
@@ -264,13 +258,7 @@ async function handleSetupStory(msg) {
   
   await bot.sendMessage(userId, `📚 **Set Up New Story**
 
-**Option 1: Upload Document (Recommended)**
-Upload a .txt file (up to 10MB) with your complete story bible from Claude Sonnet 4.
-
-**Option 2: Paste Text**  
-Paste your story bible directly (I'll handle long messages automatically).
-
-Your story bible should include:
+Paste your complete story bible created with Claude Sonnet 4. This should include:
 • Character descriptions and motivations
 • Detailed plot outline/beats
 • Setting and world-building
@@ -278,7 +266,7 @@ Your story bible should include:
 • Chapter breakdown
 • Themes and tone for THIS story
 
-**Send either a .txt file OR paste your text now.**`);
+**Just paste everything in your next message.** I'll automatically split it if it's too long for Telegram.`);
   
   botMemory.setupState = 'expecting_story_bible';
 }
@@ -355,14 +343,13 @@ Write engaging, immersive fiction that continues the story naturally. Focus on c
       version: 1,
       content: result.content,
       timestamp: new Date(),
-      approved: false,
-      cost: result.cost // Store cost for tracking
+      approved: false
     };
     
     const wordCount = result.content.split(' ').length;
     botMemory.userStats.totalWords += wordCount;
     
-    const responseText = `📖 **Chapter ${chapterNum} v1** (${wordCount} words)\n\n${result.content}\n\n💰 **Cost:** ${result.cost.toFixed(4)} (${result.tokens.input.toLocaleString()} in + ${result.tokens.output.toLocaleString()} out tokens)\n\nCommands: /revise [feedback] or /approve`;
+    const responseText = `📖 **Chapter ${chapterNum} v1** (${wordCount} words)\n\n${result.content}\n\n💰 Cost: $${result.cost.toFixed(4)}\n\nCommands: /revise [feedback] or /approve`;
     
     await sendLongMessage(userId, responseText);
   } else {
@@ -472,21 +459,22 @@ function handleStatus(msg) {
 
 📖 **Current Story:**
 • Title: ${botMemory.currentStory.title || 'Not set'}
-• Approved chapters: ${approvedChapters}
+• Approved chapters: ${approvedChapters}/${botMemory.currentStory.totalChapters || 0}
 • Words: ${currentStoryWords.toLocaleString()}
 • Started: ${botMemory.currentStory.startDate || 'Not started'}
 
 🔧 **Setup Status:**
 • Writing rules: ${botMemory.writingRules ? '✅ Set' : '❌ Missing'}
-• Story bible: ${botMemory.currentStory.bible ? '✅ Set' : '❌ Missing'}
+• Story setup: ${botMemory.currentStory.storySetup ? '✅ Set' : '❌ Missing'}
+• Chapter outlines: ${Object.keys(botMemory.currentStory.chapterOutlines).length || 0} chapters planned
 
 💰 **Usage Today:**
 • Messages: ${botMemory.dailyStats.messagesUsed}/${DAILY_MESSAGE_LIMIT}
-• Spending: $${botMemory.dailyStats.estimatedSpending.toFixed(4)}/$${DAILY_SPENDING_LIMIT}
-• Remaining: ${dailyRemaining} messages, $${dailySpendingRemaining.toFixed(4)}
+• Spending: ${botMemory.dailyStats.estimatedSpending.toFixed(4)}/${DAILY_SPENDING_LIMIT}
+• Remaining: ${dailyRemaining} messages, ${dailySpendingRemaining.toFixed(4)}
 
 📈 **All-Time Stats:**
-• Total spent: $${botMemory.userStats.totalSpent.toFixed(4)}
+• Total spent: ${botMemory.userStats.totalSpent.toFixed(4)}
 • Stories completed: ${botMemory.userStats.storiesCompleted}
 • Total chapters: ${botMemory.userStats.totalChapters}
 • Total words: ${botMemory.userStats.totalWords.toLocaleString()}`;
@@ -581,8 +569,8 @@ bot.on('message', async (msg) => {
     }
     
     // Check file size (Telegram allows up to 50MB, but let's be reasonable)
-    if (document.file_size > 10 * 1024 * 1024) { // 10MB limit
-      await bot.sendMessage(userId, "❌ File too large. Please keep story bibles under 10MB.");
+    if (document.file_size > 1024 * 1024) { // 1MB limit
+      await bot.sendMessage(userId, "❌ File too large. Please keep story bibles under 1MB.");
       return;
     }
     
@@ -698,7 +686,10 @@ Ready? Start with /setup_rules!`;
     await sendLongMessage(userId, welcomeMsg);
     
   } else if (text.startsWith('/setup_rules')) {
-    await handleSetupWritingRules(msg);
+    await handleSetupWritingRules(msg, false);
+    
+  } else if (text.startsWith('/update_rules')) {
+    await handleSetupWritingRules(msg, true);
     
   } else if (text.startsWith('/setup_story')) {
     await handleSetupStory(msg);
