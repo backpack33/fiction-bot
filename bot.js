@@ -9,7 +9,7 @@ const AUTHORIZED_USER_ID = process.env.AUTHORIZED_USER_ID; // Your Telegram ID
 // Safety limits
 const DAILY_MESSAGE_LIMIT = 50;
 const DAILY_SPENDING_LIMIT = 2.00; // $2 per day max
-const MAX_CHAPTER_LENGTH = 2000; // Words per chapter
+const MAX_CHAPTER_LENGTH = 20000; // Words per chapter
 const TELEGRAM_MESSAGE_LIMIT = 4000; // Telegram's character limit
 
 // Bot storage (in production, you'd use a database, but this works for MVP)
